@@ -59,22 +59,20 @@ public class Flag extends JApplet {
 
  private final double E = 0.054;  // See flag specification
 
- private final double F = E;  // See flag specification
+ private final double F = 0.054;  // See flag specification
 
  private final double G = 0.063;  // See flag specification
 
- private final double H = G;  // See flag specification
+ private final double H = 0.063;  // See flag specification
 
  private final double K = 0.0616;  // Diameter of star
 
  private final double L = 0.0769;  // Width of stripe
 
- 
 
     // You will need to set values for these in paint()
 
- private int flag_width, flag_height, stripe_height, field_height, field_width, star_width;
-
+ private int flag_width, flag_height, stripe_height, field_height, field_width, star_width, star_distance;
  
 
     // init() will automatically be called when an applet is run
@@ -84,8 +82,8 @@ public class Flag extends JApplet {
   // Choice of width = 1.9 * height to start off
 
   // 760 : 400 is ratio of FLY : HOIST
-
-  setSize(760, 400);
+	 flag_height = 500;
+  setSize(get_pixel_size(B), get_pixel_size(A));
 
   //repaint needs to be called for the Applet to update properly when resized
   
@@ -93,23 +91,32 @@ public class Flag extends JApplet {
 
  }
 
- 
+public int get_pixel_size(double m) {
+	
+	return (int)(m * flag_height);
+}
 
     // paint() will be called every time a resizing of an applet occurs
 
  public void paint(Graphics g) {
 
-    flag_width = getWidth();   // width of applet    
-
+    flag_width = getWidth();   // width of applet  
     flag_height = getHeight();      // height of applet
     
-    stripe_height = flag_height/13;
+    int new_flag_width = get_pixel_size(B);
     
-    field_height = (int) (flag_height * C);
-    System.out.println((flag_height));
-    System.out.println(field_height);
-    field_width = (int) (flag_height * D);
-    star_width = (int) (flag_height * K);
+    if (new_flag_width<=flag_width) {
+ 	   flag_width = new_flag_width;
+    } else {
+ 	   flag_height = (int)(flag_width/B);
+    }
+    
+    stripe_height = get_pixel_size(L);
+    
+    field_height = get_pixel_size(C);
+    field_width = get_pixel_size(D);
+    star_width = get_pixel_size(K);
+    star_distance = get_pixel_size(H);
     
 
     // Figure out whether it is the flag_height or flag_width that is
@@ -120,20 +127,9 @@ public class Flag extends JApplet {
 
     // Applets always repaint upon resizing
 
+ 
+
    
-/*
-    if (flag_width/flag_height > 1.0/1.9) {  // Height too tall for length of display
-
-      flag_height = 500;
-
-    } else {                   // Length too tall for height ofdisplay
-
-      flag_width = flag_height*1.9;
-
-    }
-*/
-   
-
    //calculate stripe height
     
    
@@ -142,7 +138,30 @@ public class Flag extends JApplet {
     drawBackground(g);
     drawStripes(g);
     drawField(g);
-
+        
+    int x = get_pixel_size(G);
+    int y = get_pixel_size(E);
+    
+    for(int  j=0; j < 9; ++j) {
+        for(int i = 0; i < 11; ++i) {
+	        if( (i+j) % 2 == 0) {
+	            drawStar(g,x,y,star_width/2);
+	        }
+	        x += get_pixel_size(H);
+    	}
+        x = get_pixel_size(G);
+        y += get_pixel_size(F);
+    }
+    
+  /*
+    for (int i=0;i<100;i++) {
+    	if(i%2 == 0) {
+    		
+    		drawStar(g, i*star_distance+x_offset,(int)(E*flag_height),star_width);
+    	}
+    	x_offset += (int)(H * flag_height);
+    }
+    */
   }
 
  
@@ -156,17 +175,12 @@ public class Flag extends JApplet {
  public void drawStripes(Graphics g) {
 
   //organization hint: make a Stripe class that contains a draw method
-	 int temp = -stripe_height;
-	 for (int i=0; i<13;i++) {
-		 //g.drawRect(0, temp+stripe_height, flag_width, stripe_height);
-		 //System.out.println(stripe_height + ", " + temp + ", " + i);
-		 temp = temp+stripe_height;
+	 for (int i=0, y=0; i<13;i++, y+=stripe_height) {
 		 if (i % 2 == 0) {
 			 g.setColor(Color.red);
-			 g.fillRect(0, temp, flag_width, stripe_height);
+			 g.fillRect(0, y, flag_width, stripe_height);
 		 }
 	 }
-	 
  }
 
  
@@ -180,19 +194,42 @@ public class Flag extends JApplet {
 
  
 
- public void drawStars(Graphics g) {
-	 int star_pos;
-	 int inner_radius = (int) (star_width * 0.382);
-	 int[] xvalues = new int[10];
-	 int[] yvalues = new int[10];
-	 //360/10
-	 int temp = -90+(360/10);
-	 for (int i=0;i<10;i++) {
-		 temp = temp-(360/10);
-		 xvalues[i] = (int) Math.cos(temp);
-		 xvalues[i] = (int) Math.sin(temp);
-	 }
-	 g.drawPolygon(xvalues, yvalues, 10);
+ public void drawStar(Graphics g, int centerXin, int centerYin, int outerRadius) {
+	 	int centerX = centerXin;
+		int centerY = centerYin;
+
+
+		int rOut = outerRadius;  // a value I picked for the outer radius
+
+		//calculate the inner radius using math!
+		double innerRadius = rOut * 0.382;
+
+		// the arrays of x and y coordinates of the star
+		int[] x = new int[10];
+		int[] y = new int[10];
+
+		//determine how to fill in the arrays of the coordinates
+		int temp = 0;
+		 for (int i=0;i<10;i++) {
+			 if (i%2==0) {
+				 //temp = temp-(360/10);
+				 x[i] = (int) (centerX+rOut*Math.cos(Math.toRadians(18+(72*temp))));
+				 y[i] = (int) (centerY-rOut*Math.sin(Math.toRadians(18+(72*temp))));
+				 //temp = temp+1;
+			 } else {
+				 //temp = temp-(360/10);
+				 x[i] = (int) (centerX+innerRadius*Math.cos(Math.toRadians(54+(72*temp))));
+				 y[i] = (int) (centerY-innerRadius*Math.sin(Math.toRadians(54+(72*temp))));
+				 temp = temp+1;
+			 }
+		 }
+
+
+		//actually drawing the star
+		g.setColor(Color.WHITE);
+		g.fillPolygon(x, y, 10);
+		g.setColor(Color.WHITE);
+		g.drawPolygon(x, y, 10);
   
 
  }
